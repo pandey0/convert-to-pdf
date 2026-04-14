@@ -129,10 +129,11 @@ export async function POST(req) {
               width: 100%;
               border-collapse: collapse;
               margin-bottom: 24px;
+              border: 0.5pt solid #000;
             }
             table th, table td { 
-              padding: 10px;
-              border: 1px solid #c8d1d9; /* Darker border for better PDF visibility */
+              padding: 8px;
+              border: 0.5pt solid #000;
               text-align: left;
             }
             table th { 
@@ -149,7 +150,32 @@ export async function POST(req) {
           </style>
         </head>
         <body>
-          ${marked.parse(buffer.toString())}
+          ${(() => {
+            const renderer = new marked.Renderer();
+            // In marked v18, the table renderer receives a single token object
+            renderer.table = function(token) {
+              let headerHtml = '';
+              for (let i = 0; i < token.header.length; i++) {
+                headerHtml += this.tablecell(token.header[i]);
+              }
+              const headerRow = this.tablerow({ text: headerHtml });
+
+              let bodyHtml = '';
+              for (let i = 0; i < token.rows.length; i++) {
+                let rowHtml = '';
+                for (let j = 0; j < token.rows[i].length; j++) {
+                  rowHtml += this.tablecell(token.rows[i][j]);
+                }
+                bodyHtml += this.tablerow({ text: rowHtml });
+              }
+
+              return `<table border="1" cellspacing="0" cellpadding="5" style="border-collapse:collapse; width:100%; border: 0.5pt solid #000;">
+                <thead>${headerRow}</thead>
+                <tbody>${bodyHtml}</tbody>
+              </table>`;
+            };
+            return marked.parse(buffer.toString(), { renderer });
+          })()}
         </body>
         </html>
       `;
