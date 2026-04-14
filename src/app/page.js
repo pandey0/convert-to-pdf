@@ -6,6 +6,7 @@ import './globals.css'; // Make sure styles are imported if not via layout
 
 export default function Home() {
   const [file, setFile] = useState(null);
+  const [fromFormat, setFromFormat] = useState('auto');
   const [isDragging, setIsDragging] = useState(false);
   const [status, setStatus] = useState('idle'); // idle, paying, converting, done, error
   const [pdfUrl, setPdfUrl] = useState(null);
@@ -170,6 +171,34 @@ export default function Home() {
       <div className="converter-card">
         {status !== 'done' ? (
           <>
+            <div className="selector-group">
+              <div className="selector-box">
+                <label>From</label>
+                <select 
+                  className="styled-select" 
+                  value={fromFormat}
+                  onChange={(e) => setFromFormat(e.target.value)}
+                >
+                  <option value="auto">Auto Detect</option>
+                  <option value="word">Word Document</option>
+                  <option value="excel">Excel Sheet</option>
+                  <option value="ppt">PowerPoint</option>
+                  <option value="image">Image (JPG/PNG)</option>
+                  <option value="text">Text File</option>
+                  <option value="md">Markdown (.md)</option>
+                </select>
+              </div>
+              
+              <div className="arrow-divider">→</div>
+
+              <div className="selector-box">
+                <label>To</label>
+                <select className="styled-select" disabled>
+                  <option>PDF Document</option>
+                </select>
+              </div>
+            </div>
+
             <div 
               className={`dropzone ${isDragging ? 'active' : ''}`}
               onDragOver={handleDragOver}
@@ -186,6 +215,15 @@ export default function Home() {
                 onChange={handleFileSelect} 
                 className="hidden" 
                 style={{ display: 'none' }}
+                accept={
+                  fromFormat === 'word' ? '.doc,.docx' :
+                  fromFormat === 'excel' ? '.xls,.xlsx,.csv' :
+                  fromFormat === 'ppt' ? '.ppt,.pptx' :
+                  fromFormat === 'image' ? '.jpg,.jpeg,.png,.webp' :
+                  fromFormat === 'md' ? '.md' :
+                  fromFormat === 'text' ? '.txt' :
+                  undefined
+                }
               />
             </div>
 
