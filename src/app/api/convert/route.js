@@ -6,20 +6,41 @@ import { PDFDocument } from 'pdf-lib';
 import libre from 'libreoffice-convert';
 import { promisify } from 'util';
 import { marked } from 'marked';
+import { rateLimit } from '../../../lib/rate-limit';
 
 const convertAsync = promisify(libre.convert);
 
 export async function POST(req) {
   try {
+    const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
+    const limitResult = rateLimit(ip, 10, 60000); // 10 conversions per minute
+
+    if (!limitResult.success) {
+      return NextResponse.json(
+        { success: false, message: 'Too many requests. Please try again later.' },
+        { status: 429 }
+      );
+    }
+
     const formData = await req.formData();
     const file = formData.get('file');
-    const bypass = formData.get('bypass_payment') === 'true';
-    const orderId = formData.get('razorpay_order_id');
-    const paymentId = formData.get('razorpay_payment_id');
-    const signature = formData.get('razorpay_signature');
+    const bypassRequested = formData.get('bypass_payment') === 'true';
+    
+    // Strict bypass validation: only allow if env is explicitly 'true'
+    const bypass = bypassRequested && process.env.NEXT_PUBLIC_SKIP_PAYMENT === 'true';
+
+    if (bypassRequested && !bypass) {
+        console.warn(`[SECURITY] Unauthorized bypass attempt from IP: ${ip}`);
+        return NextResponse.json({ success: false, message: 'Unauthorized bypass attempt' }, { status: 403 });
+    }
 
     if (!file) {
         return NextResponse.json({ success: false, message: 'Missing file' }, { status: 400 });
+    }
+
+    // 10MB File Size Limit
+    if (file.size > 10 * 1024 * 1024) {
+        return NextResponse.json({ success: false, message: 'File too large (Max 10MB)' }, { status: 413 });
     }
 
     if (!bypass) {
@@ -201,10 +222,18 @@ export async function POST(req) {
     } else {
       // Document to PDF using LibreOffice (handles Word, Excel, PPT, Text, and HTML/MD)
       try {
-        pdfBuffer = await convertAsync(finalBuffer, '.pdf', undefined);
+        // 60-second timeout for conversion
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Conversion timed out after 60s')), 60000)
+        );
+        
+        pdfBuffer = await Promise.race([
+          convertAsync(finalBuffer, '.pdf', undefined),
+          timeoutPromise
+        ]);
       } catch (err) {
-        console.error('LibreOffice conversion error:', err);
-        throw new Error('Document conversion failed. Ensure LibreOffice is installed.');
+        console.error('Conversion error:', err);
+        throw new Error(err.message || 'Conversion failed. Process timed out or server error.');
       }
     }
 
