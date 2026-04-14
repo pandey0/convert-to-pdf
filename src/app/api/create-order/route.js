@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { razorpay } from '../../../lib/razorpay';
 import { prisma } from '../../../lib/db';
 import { rateLimit } from '../../../lib/rate-limit';
+import { isUserInIndia } from '../../../lib/geo';
 
 export async function POST(req) {
   try {
@@ -15,8 +16,9 @@ export async function POST(req) {
       );
     }
 
-    const amount = 99 * 100; // ₹99 in paise
-    const currency = 'INR';
+    const inIndia = await isUserInIndia(ip);
+    const amount = inIndia ? 10 * 100 : 250; // ₹10 in paise (1000) OR $2.50 in cents (250)
+    const currency = inIndia ? 'INR' : 'USD';
 
     const options = {
       amount,
@@ -31,6 +33,8 @@ export async function POST(req) {
       data: {
         razorpayOrderId: order.id,
         status: 'created',
+        amount: amount,
+        currency: currency,
       },
     });
 

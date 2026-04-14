@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react';
 import { UploadCloud, File, CheckCircle, Loader2, Download } from 'lucide-react';
-import './globals.css'; // Make sure styles are imported if not via layout
+import './globals.css'; 
 
 export default function Home() {
   const [files, setFiles] = useState([]);
@@ -106,31 +106,57 @@ export default function Home() {
   const triggerPaymentAndConversion = async () => {
     if (files.length === 0) return;
 
-    // Check for bypass
-    if (process.env.NEXT_PUBLIC_SKIP_PAYMENT === 'true') {
-      await performConversion({ bypass: true });
-      return;
-    }
-
-    setStatus('paying');
+    // Use a clean error clearing
     setErrorMessage("");
 
+    // 1. SILENT FREE ATTEMPT (No bragging, just try)
+    setStatus('converting'); 
     try {
-      // 1. Create Razorpay Order
+      const formData = new FormData();
+      files.forEach(f => formData.append('file', f));
+      formData.append('bypass_payment', 'true');
+
+      const freeRes = await fetch('/api/convert', { method: 'POST', body: formData });
+
+      if (freeRes.ok) {
+        // Successful one-time free conversion!
+        const blob = await freeRes.blob();
+        setPdfUrl(window.URL.createObjectURL(blob));
+        setStatus('done');
+        return;
+      }
+      
+      // If reached limit (402), transition to payment flow
+      if (freeRes.status === 402) {
+        setStatus('paying');
+      } else {
+        const errData = await freeRes.json();
+        throw new Error(errData.message || 'Error occurred');
+      }
+    } catch (err) {
+      // If it wasn't a 402, it was a real error
+      if (status !== 'paying') {
+        setErrorMessage(err.message);
+        setStatus('error');
+        return;
+      }
+    }
+
+    // 2. REGIONAL PAYMENT FLOW (Only if free failed)
+    try {
       const orderRes = await fetch('/api/create-order', { method: 'POST' });
       const orderData = await orderRes.json();
 
       if (!orderData.success) {
-        throw new Error('Failed to create order');
+        throw new Error('Failed to initialize payment');
       }
 
-      // 2. Open Razorpay Checkout
       const options = {
         key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || 'rzp_test_placeholder', 
         amount: orderData.order.amount,
-        currency: "INR",
-        name: "Convert to PDF",
-        description: "One-time PDF conversion fee",
+        currency: orderData.order.currency, // DYNAMIC: INR or USD
+        name: "convert-to-pdf",
+        description: "Premium PDF Conversion",
         order_id: orderData.order.id,
         handler: async function (response) {
             await performConversion(response);
@@ -138,10 +164,9 @@ export default function Home() {
         prefill: {
             name: "Customer",
             email: "customer@example.com",
-            contact: "9999999999"
         },
         theme: {
-            color: "#3b82f6"
+            color: "#000000"
         },
         modal: {
             ondismiss: function() {
@@ -166,10 +191,10 @@ export default function Home() {
   const getButtonState = () => {
     switch (status) {
       case 'paying': return { text: 'Initializing Payment...', disabled: true, icon: <Loader2 className="spinner" /> };
-      case 'converting': return { text: 'Converting... Please Wait', disabled: true, icon: <Loader2 className="spinner" /> };
-      case 'done': return { text: 'Convert Another File', disabled: false, icon: null, action: () => { setFiles([]); setStatus('idle'); } };
+      case 'converting': return { text: 'Processing File...', disabled: true, icon: <Loader2 className="spinner" /> };
+      case 'done': return { text: 'Convert Another', disabled: false, icon: null, action: () => { setFiles([]); setStatus('idle'); } };
       default: return { 
-        text: process.env.NEXT_PUBLIC_SKIP_PAYMENT === 'true' ? 'Convert (Free Dev Mode)' : 'Pay ₹99 & Convert', 
+        text: 'CONVERT TO PDF', 
         disabled: files.length === 0, 
         icon: null, 
         action: triggerPaymentAndConversion 
@@ -181,14 +206,12 @@ export default function Home() {
 
   return (
     <div className="layout-wrapper">
-      {/* Sticky Left Sidebar */}
       <aside className="ad-sidebar">
         <span className="ad-label">Sponsored</span>
         <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#666' }}>160 x 600 AD SLOT</div>
       </aside>
 
       <main className="container">
-        {/* Header Banner */}
         <div className="ad-banner">
           <span className="ad-label">Sponsored</span>
           <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#666' }}>728 x 90 LEADERBOARD</div>
@@ -196,7 +219,7 @@ export default function Home() {
 
         <div className="header">
           <h1>convert-to-pdf</h1>
-          <p>Convert any document to PDF: MD files, Text files, Presentations, Images, and Word files.</p>
+          <p>Professional document-to-PDF conversion with perfect formatting.</p>
         </div>
 
       <div className="converter-card">
@@ -239,7 +262,7 @@ export default function Home() {
             >
               <UploadCloud className="dropzone-icon" />
               <h3>Drag & Drop your file here</h3>
-              <p style={{ marginTop: '0.5rem', color: '#000', fontWeight: 'bold' }}>OR CLICK TO BROWSE FROM YOUR COMPUTER</p>
+              <p style={{ marginTop: '0.5rem', color: '#000', fontWeight: 'bold' }}>OR CLICK TO BROWSE</p>
               <input 
                 type="file" 
                 ref={fileInputRef} 
@@ -260,42 +283,33 @@ export default function Home() {
             </div>
 
             {files.length > 0 && (
-              <div style={{ marginTop: '2rem' }}>
-                <h4 style={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.85rem', marginBottom: '1rem' }}>Queued Files ({files.length})</h4>
-                <div style={{ display: 'grid', gap: '1rem' }}>
+              <div style={{ marginTop: '1.5rem' }}>
+                <h4 style={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.75rem', marginBottom: '1rem' }}>Queued Files ({files.length})</h4>
+                <div style={{ display: 'grid', gap: '0.5rem' }}>
                   {files.map((f, index) => (
-                    <div key={index} className="file-info" style={{ marginTop: 0 }}>
+                    <div key={index} className="file-info" style={{ marginTop: 0, padding: '0.75rem' }}>
                       <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginRight: '0.5rem' }}>
                         <button 
                           disabled={index === 0}
                           onClick={(e) => { e.stopPropagation(); moveFile(index, 'up'); }}
                           style={{ border: 'none', background: 'none', cursor: index === 0 ? 'default' : 'pointer', fontSize: '1rem', opacity: index === 0 ? 0.3 : 1 }}
-                          title="Move Up"
-                        >
-                          ▲
-                        </button>
+                        >▲</button>
                         <button 
                           disabled={index === files.length - 1}
                           onClick={(e) => { e.stopPropagation(); moveFile(index, 'down'); }}
                           style={{ border: 'none', background: 'none', cursor: index === files.length - 1 ? 'default' : 'pointer', fontSize: '1rem', opacity: index === files.length - 1 ? 0.3 : 1 }}
-                          title="Move Down"
-                        >
-                          ▼
-                        </button>
+                        >▼</button>
                       </div>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, minWidth: 0 }}>
-                        <File color="#000" style={{ flexShrink: 0 }} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', flex: 1, minWidth: 0 }}>
+                        <File size={20} color="#000" style={{ flexShrink: 0 }} />
                         <div style={{ minWidth: 0 }}>
-                          <h4 style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</h4>
-                          <span style={{ fontSize: '0.85rem', color: '#000', fontWeight: 600 }}>{(f.size / 1024 / 1024).toFixed(2)} MB</span>
+                          <h4 style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', fontSize: '0.9rem' }}>{f.name}</h4>
                         </div>
                       </div>
                       <button 
                         onClick={(e) => { e.stopPropagation(); removeFile(index); }}
                         style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 0.5rem', color: '#666' }}
-                      >
-                        ✕
-                      </button>
+                      >✕</button>
                     </div>
                   ))}
                 </div>
@@ -318,17 +332,15 @@ export default function Home() {
             </button>
           </>
         ) : (
-          <div style={{ textAlign: 'center', padding: '2rem 0' }}>
-            <CheckCircle color="#000" size={80} style={{ margin: '0 auto 1.5rem auto' }} />
-            <h2 style={{ fontSize: '2rem', marginBottom: '1rem', textTransform: 'uppercase' }}>Conversion Successful!</h2>
-            <p style={{ color: '#000', marginBottom: '2rem', fontWeight: 600 }}>Your file has been perfectly converted to PDF.</p>
+          <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+            <CheckCircle color="#000" size={60} style={{ margin: '0 auto 1rem auto' }} />
+            <h2 style={{ fontSize: '1.5rem', marginBottom: '0.5rem', textTransform: 'uppercase' }}>Conversion Success!</h2>
             
-            {/* Success Ad Slot */}
             <div className="ad-success-slot">
               <span className="ad-label">Sponsored</span>
               <div style={{ textAlign: 'center' }}>
-                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#666', marginBottom: '0.5rem' }}>POST-CONVERSION SPECIAL</div>
-                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#999' }}>300 x 250 AD SLOT</div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, color: '#666', marginBottom: '0.25rem' }}>SPECIAL OFFER</div>
+                <div style={{ fontSize: '0.7rem', fontWeight: 600, color: '#999' }}>300 x 250 AD SLOT</div>
               </div>
             </div>
 
@@ -336,9 +348,9 @@ export default function Home() {
               href={pdfUrl} 
               download={files[0]?.name.split('.')[0] + '.pdf'}
               className="btn btn-success" 
-              style={{ textDecoration: 'none', display: 'flex', marginBottom: '1rem' }}
+              style={{ textDecoration: 'none', display: 'flex', marginBottom: '0.75rem' }}
             >
-              <Download /> Download PDF
+              <Download size={20} /> Download PDF
             </a>
             
             <button className="btn" onClick={btnState.action}>
@@ -349,7 +361,6 @@ export default function Home() {
       </div>
     </main>
 
-    {/* Sticky Right Sidebar */}
     <aside className="ad-sidebar">
       <span className="ad-label">Sponsored</span>
       <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#666' }}>160 x 600 AD SLOT</div>
