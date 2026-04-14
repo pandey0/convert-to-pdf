@@ -5,7 +5,7 @@ import { UploadCloud, File, CheckCircle, Loader2, Download } from 'lucide-react'
 import './globals.css'; // Make sure styles are imported if not via layout
 
 export default function Home() {
-  const [file, setFile] = useState(null);
+  const [files, setFiles] = useState([]);
   const [fromFormat, setFromFormat] = useState('auto');
   const [isDragging, setIsDragging] = useState(false);
   const [status, setStatus] = useState('idle'); // idle, paying, converting, done, error
@@ -37,24 +37,42 @@ export default function Home() {
   const handleDrop = (e) => {
     e.preventDefault();
     setIsDragging(false);
-    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
-      setFile(e.dataTransfer.files[0]);
+    if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+      const newFiles = Array.from(e.dataTransfer.files);
+      setFiles(prev => [...prev, ...newFiles]);
       setStatus('idle');
     }
   };
 
   const handleFileSelect = (e) => {
-    if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0]);
+    if (e.target.files && e.target.files.length > 0) {
+      const newFiles = Array.from(e.target.files);
+      setFiles(prev => [...prev, ...newFiles]);
       setStatus('idle');
     }
+  };
+
+  const removeFile = (index) => {
+    setFiles(prev => prev.filter((_, i) => i !== index));
+  };
+
+  const moveFile = (index, direction) => {
+    setFiles(prev => {
+      const newFiles = [...prev];
+      const targetIndex = direction === 'up' ? index - 1 : index + 1;
+      if (targetIndex < 0 || targetIndex >= newFiles.length) return prev;
+      [newFiles[index], newFiles[targetIndex]] = [newFiles[targetIndex], newFiles[index]];
+      return newFiles;
+    });
   };
 
   const performConversion = async (paymentDetails = {}) => {
     setStatus('converting');
     
     const formData = new FormData();
-    formData.append('file', file);
+    files.forEach(f => {
+      formData.append('file', f);
+    });
     
     if (paymentDetails.bypass) {
       formData.append('bypass_payment', 'true');
@@ -86,7 +104,7 @@ export default function Home() {
   };
 
   const triggerPaymentAndConversion = async () => {
-    if (!file) return;
+    if (files.length === 0) return;
 
     // Check for bypass
     if (process.env.NEXT_PUBLIC_SKIP_PAYMENT === 'true') {
@@ -149,10 +167,10 @@ export default function Home() {
     switch (status) {
       case 'paying': return { text: 'Initializing Payment...', disabled: true, icon: <Loader2 className="spinner" /> };
       case 'converting': return { text: 'Converting... Please Wait', disabled: true, icon: <Loader2 className="spinner" /> };
-      case 'done': return { text: 'Convert Another File', disabled: false, icon: null, action: () => { setFile(null); setStatus('idle'); } };
+      case 'done': return { text: 'Convert Another File', disabled: false, icon: null, action: () => { setFiles([]); setStatus('idle'); } };
       default: return { 
         text: process.env.NEXT_PUBLIC_SKIP_PAYMENT === 'true' ? 'Convert (Free Dev Mode)' : 'Pay ₹99 & Convert', 
-        disabled: !file, 
+        disabled: files.length === 0, 
         icon: null, 
         action: triggerPaymentAndConversion 
       };
@@ -162,11 +180,24 @@ export default function Home() {
   const btnState = getButtonState();
 
   return (
-    <main className="container">
-      <div className="header">
-        <h1>convert-to-pdf</h1>
-        <p>Convert any document to PDF: MD files, Text files, Presentations, Images, and Word files.</p>
-      </div>
+    <div className="layout-wrapper">
+      {/* Sticky Left Sidebar */}
+      <aside className="ad-sidebar">
+        <span className="ad-label">Sponsored</span>
+        <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#666' }}>160 x 600 AD SLOT</div>
+      </aside>
+
+      <main className="container">
+        {/* Header Banner */}
+        <div className="ad-banner">
+          <span className="ad-label">Sponsored</span>
+          <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#666' }}>728 x 90 LEADERBOARD</div>
+        </div>
+
+        <div className="header">
+          <h1>convert-to-pdf</h1>
+          <p>Convert any document to PDF: MD files, Text files, Presentations, Images, and Word files.</p>
+        </div>
 
       <div className="converter-card">
         {status !== 'done' ? (
@@ -215,6 +246,7 @@ export default function Home() {
                 onChange={handleFileSelect} 
                 className="hidden" 
                 style={{ display: 'none' }}
+                multiple={fromFormat === 'image' || fromFormat === 'auto'}
                 accept={
                   fromFormat === 'word' ? '.doc,.docx' :
                   fromFormat === 'excel' ? '.xls,.xlsx,.csv' :
@@ -227,16 +259,46 @@ export default function Home() {
               />
             </div>
 
-            {file && (
-              <div className="file-info">
-                <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                  <File color="#000" />
-                  <div>
-                    <h4 style={{ fontWeight: 700 }}>{file.name}</h4>
-                    <span style={{ fontSize: '0.85rem', color: '#000', fontWeight: 600 }}>{(file.size / 1024 / 1024).toFixed(2)} MB</span>
-                  </div>
+            {files.length > 0 && (
+              <div style={{ marginTop: '2rem' }}>
+                <h4 style={{ fontWeight: 700, textTransform: 'uppercase', fontSize: '0.85rem', marginBottom: '1rem' }}>Queued Files ({files.length})</h4>
+                <div style={{ display: 'grid', gap: '1rem' }}>
+                  {files.map((f, index) => (
+                    <div key={index} className="file-info" style={{ marginTop: 0 }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginRight: '0.5rem' }}>
+                        <button 
+                          disabled={index === 0}
+                          onClick={(e) => { e.stopPropagation(); moveFile(index, 'up'); }}
+                          style={{ border: 'none', background: 'none', cursor: index === 0 ? 'default' : 'pointer', fontSize: '1rem', opacity: index === 0 ? 0.3 : 1 }}
+                          title="Move Up"
+                        >
+                          ▲
+                        </button>
+                        <button 
+                          disabled={index === files.length - 1}
+                          onClick={(e) => { e.stopPropagation(); moveFile(index, 'down'); }}
+                          style={{ border: 'none', background: 'none', cursor: index === files.length - 1 ? 'default' : 'pointer', fontSize: '1rem', opacity: index === files.length - 1 ? 0.3 : 1 }}
+                          title="Move Down"
+                        >
+                          ▼
+                        </button>
+                      </div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flex: 1, minWidth: 0 }}>
+                        <File color="#000" style={{ flexShrink: 0 }} />
+                        <div style={{ minWidth: 0 }}>
+                          <h4 style={{ fontWeight: 700, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{f.name}</h4>
+                          <span style={{ fontSize: '0.85rem', color: '#000', fontWeight: 600 }}>{(f.size / 1024 / 1024).toFixed(2)} MB</span>
+                        </div>
+                      </div>
+                      <button 
+                        onClick={(e) => { e.stopPropagation(); removeFile(index); }}
+                        style={{ border: 'none', background: 'none', cursor: 'pointer', fontSize: '1.2rem', padding: '0 0.5rem', color: '#666' }}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  ))}
                 </div>
-                <CheckCircle color="#000" />
               </div>
             )}
 
@@ -261,9 +323,18 @@ export default function Home() {
             <h2 style={{ fontSize: '2rem', marginBottom: '1rem', textTransform: 'uppercase' }}>Conversion Successful!</h2>
             <p style={{ color: '#000', marginBottom: '2rem', fontWeight: 600 }}>Your file has been perfectly converted to PDF.</p>
             
+            {/* Success Ad Slot */}
+            <div className="ad-success-slot">
+              <span className="ad-label">Sponsored</span>
+              <div style={{ textAlign: 'center' }}>
+                <div style={{ fontSize: '0.9rem', fontWeight: 700, color: '#666', marginBottom: '0.5rem' }}>POST-CONVERSION SPECIAL</div>
+                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#999' }}>300 x 250 AD SLOT</div>
+              </div>
+            </div>
+
             <a 
               href={pdfUrl} 
-              download={file.name.split('.')[0] + '.pdf'}
+              download={files[0]?.name.split('.')[0] + '.pdf'}
               className="btn btn-success" 
               style={{ textDecoration: 'none', display: 'flex', marginBottom: '1rem' }}
             >
@@ -277,5 +348,12 @@ export default function Home() {
         )}
       </div>
     </main>
-  );
+
+    {/* Sticky Right Sidebar */}
+    <aside className="ad-sidebar">
+      <span className="ad-label">Sponsored</span>
+      <div style={{ fontSize: '0.85rem', fontWeight: 700, color: '#666' }}>160 x 600 AD SLOT</div>
+    </aside>
+  </div>
+);
 }
