@@ -37,7 +37,7 @@ export default function PricingPage() {
             <li style={{ marginBottom: '0.75rem', fontWeight: 600 }}>✅ Instant high-priority processing</li>
             <li style={{ marginBottom: '0.75rem', fontWeight: 600 }}>✅ Up to 10MB per file</li>
             <li style={{ marginBottom: '0.75rem', fontWeight: 600 }}>✅ Perfect formatting guaranteed</li>
-            <li style={{ marginBottom: '0.75rem', fontWeight: 600 }}>✅ Document Merging (Combine multiple file types)</li>
+            <li style={{ marginBottom: '0.75rem', fontWeight: 600 }}>✅ Document Merging (Word, Excel, PowerPoint, PDF, Images, Text, Markdown)</li>
             <li style={{ marginBottom: '0.75rem', fontWeight: 600 }}>✅ Unlimited multi-image merging</li>
           </ul>
           

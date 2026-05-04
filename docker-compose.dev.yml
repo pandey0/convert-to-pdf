@@ -6,9 +6,17 @@ services:
     volumes:
       - .:/app
       - node_modules:/app/node_modules
+      - job_storage:/data
     depends_on:
       db:
         condition: service_healthy
+    restart: unless-stopped
+
+  worker:
+    volumes:
+      - .:/app
+      - node_modules:/app/node_modules
+      - job_storage:/data
     restart: unless-stopped
 
   db:
@@ -29,3 +37,4 @@ services:
 volumes:
   node_modules:
   postgres_data:
+  job_storage:

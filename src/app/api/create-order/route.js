@@ -1,13 +1,15 @@
 import { NextResponse } from 'next/server';
-import { razorpay } from '../../../lib/razorpay';
+import { razorpay, requireRazorpayConfig } from '../../../lib/razorpay';
 import { prisma } from '../../../lib/db';
 import { rateLimit } from '../../../lib/rate-limit';
 import { isUserInIndia } from '../../../lib/geo';
+import { getClientIp, hashIdentifier } from '../../../lib/request';
 
 export async function POST(req) {
   try {
-    const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
-    const limitResult = rateLimit(ip, 5, 60000); // 5 orders per minute
+    const ip = getClientIp(req);
+    const ipHash = hashIdentifier(ip);
+    const limitResult = await rateLimit(`create-order:${ipHash}`, 5, 60000); // 5 orders per minute
 
     if (!limitResult.success) {
       return NextResponse.json(
@@ -15,6 +17,8 @@ export async function POST(req) {
         { status: 429 }
       );
     }
+
+    requireRazorpayConfig();
 
     const inIndia = await isUserInIndia(ip);
     const amount = inIndia ? 10 * 100 : 250; // ₹10 in paise (1000) OR $2.50 in cents (250)

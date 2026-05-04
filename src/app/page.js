@@ -11,7 +11,10 @@ export default function Home() {
   const [status, setStatus] = useState('idle'); // idle, paying, converting, done, error
   const [pdfUrl, setPdfUrl] = useState(null);
   const [errorMessage, setErrorMessage] = useState("");
+  const [activeJobId, setActiveJobId] = useState(null);
+  const [jobStatus, setJobStatus] = useState(null);
   const fileInputRef = useRef(null);
+  const supportedExtensions = ['doc', 'docx', 'odt', 'rtf', 'pdf', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'png', 'jpg', 'jpeg', 'webp', 'txt', 'md'];
 
   useEffect(() => {
     // Load Razorpay script
@@ -45,11 +48,22 @@ export default function Home() {
       'webp': 'image',
       'md': 'md',
       'txt': 'text',
+      'pdf': 'word',
+      'doc': 'word',
+      'odt': 'word',
+      'rtf': 'word',
+      'xls': 'excel',
       'xlsx': 'excel',
       'csv': 'excel',
+      'ppt': 'ppt',
       'pptx': 'ppt'
     };
     return map[ext] || 'auto';
+  };
+
+  const isSupportedFile = (fileName) => {
+    const ext = fileName.split('.').pop().toLowerCase();
+    return supportedExtensions.includes(ext);
   };
 
   const handleDrop = (e) => {
@@ -57,6 +71,13 @@ export default function Home() {
     setIsDragging(false);
     if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
       const dropFiles = Array.from(e.dataTransfer.files);
+      const unsupported = dropFiles.filter(file => !isSupportedFile(file.name));
+      if (unsupported.length > 0) {
+        setErrorMessage(`Unsupported file type(s): ${unsupported.map(file => file.name).join(', ')}. Supported types are PDF, Word, Excel, PowerPoint, text, markdown, and images.`);
+        setStatus('error');
+        return;
+      }
+      setErrorMessage('');
       if (dropFiles[0]) {
         const detected = mapExtensions(dropFiles[0].name);
         if (files.length === 0) {
@@ -81,6 +102,14 @@ export default function Home() {
   const handleFileSelect = (e) => {
     if (e.target.files && e.target.files.length > 0) {
       const selectedFiles = Array.from(e.target.files);
+      const unsupported = selectedFiles.filter(file => !isSupportedFile(file.name));
+      if (unsupported.length > 0) {
+        setErrorMessage(`Unsupported file type(s): ${unsupported.map(file => file.name).join(', ')}. Supported types are PDF, Word, Excel, PowerPoint, text, markdown, and images.`);
+        setStatus('error');
+        e.target.value = '';
+        return;
+      }
+      setErrorMessage('');
       if (selectedFiles[0]) {
         const detected = mapExtensions(selectedFiles[0].name);
         if (files.length === 0) {
@@ -99,6 +128,7 @@ export default function Home() {
       });
       setFiles(prev => [...prev, ...newFiles]);
       setStatus('idle');
+      e.target.value = '';
     }
   };
 
@@ -144,19 +174,73 @@ export default function Home() {
         method: 'POST',
         body: formData
       });
-      
+
+      if (convertRes.status === 202) {
+        const queuedData = await convertRes.json();
+        const jobId = queuedData?.job?.id;
+        if (!jobId) {
+          throw new Error('Conversion job was not created');
+        }
+        await waitForJobCompletion(jobId);
+        return;
+      }
+
       if (convertRes.ok) {
         const blob = await convertRes.blob();
         const url = window.URL.createObjectURL(blob);
         setPdfUrl(url);
+        setActiveJobId(null);
+        setJobStatus('completed');
         setStatus('done');
       } else {
         const errorData = await convertRes.json();
         throw new Error(errorData.message || 'Conversion failed');
       }
     } catch (err) {
+      setActiveJobId(null);
+      setJobStatus(null);
       setErrorMessage(err.message);
       setStatus('error');
+    }
+  };
+
+  const waitForJobCompletion = async (jobId) => {
+    setActiveJobId(jobId);
+    setJobStatus('queued');
+
+    while (true) {
+      const statusRes = await fetch(`/api/jobs/${jobId}`);
+      const statusData = await statusRes.json();
+
+      if (!statusData.success) {
+        throw new Error(statusData.message || 'Failed to check conversion status');
+      }
+
+      const job = statusData.job;
+      const nextRetryAt = job.nextRetryAt ? new Date(job.nextRetryAt) : null;
+      const retryPending = job.status === 'queued' && nextRetryAt && nextRetryAt > new Date();
+      setJobStatus(retryPending ? 'retrying' : job.status);
+
+      if (job.status === 'failed') {
+        throw new Error(job.errorMessage || 'Conversion failed');
+      }
+
+      if (job.status === 'completed' && job.downloadUrl) {
+        const downloadRes = await fetch(job.downloadUrl);
+        if (!downloadRes.ok) {
+          throw new Error('Converted PDF is ready but could not be downloaded');
+        }
+
+        const blob = await downloadRes.blob();
+        const url = window.URL.createObjectURL(blob);
+        setPdfUrl(url);
+        setStatus('done');
+        setActiveJobId(null);
+        setJobStatus('completed');
+        return;
+      }
+
+      await new Promise((resolve) => setTimeout(resolve, 1500));
     }
   };
 
@@ -176,10 +260,22 @@ export default function Home() {
 
       const freeRes = await fetch('/api/convert', { method: 'POST', body: formData });
 
+      if (freeRes.status === 202) {
+        const queuedData = await freeRes.json();
+        const jobId = queuedData?.job?.id;
+        if (!jobId) {
+          throw new Error('Conversion job was not created');
+        }
+        await waitForJobCompletion(jobId);
+        return;
+      }
+
       if (freeRes.ok) {
         // Successful one-time free conversion!
         const blob = await freeRes.blob();
         setPdfUrl(window.URL.createObjectURL(blob));
+        setActiveJobId(null);
+        setJobStatus('completed');
         setStatus('done');
         return;
       }
@@ -194,6 +290,7 @@ export default function Home() {
     } catch (err) {
       // If it wasn't a 402, it was a real error
       if (status !== 'paying') {
+        setActiveJobId(null);
         setErrorMessage(err.message);
         setStatus('error');
         return;
@@ -236,6 +333,8 @@ export default function Home() {
       const rzp = new window.Razorpay(options);
       rzp.on('payment.failed', function (response){
           setErrorMessage(response.error.description);
+          setActiveJobId(null);
+          setJobStatus(null);
           setStatus('error');
       });
       rzp.open();
@@ -251,11 +350,19 @@ export default function Home() {
   useEffect(() => {
     let interval;
     if (status === 'converting') {
-      setProgress(0);
+      if (jobStatus === 'queued' || jobStatus === 'retrying') {
+        setProgress(25);
+      } else if (jobStatus === 'processing') {
+        setProgress(68);
+      } else {
+        setProgress(40);
+      }
       interval = setInterval(() => {
         setProgress(prev => {
-          if (prev < 90) return prev + Math.random() * 5;
-          return prev;
+          const floor = jobStatus === 'queued' || jobStatus === 'retrying' ? 15 : jobStatus === 'processing' ? 55 : 25;
+          const ceiling = jobStatus === 'queued' || jobStatus === 'retrying' ? 35 : jobStatus === 'processing' ? 90 : 60;
+          if (prev < ceiling) return Math.min(ceiling, prev + Math.random() * 4);
+          return Math.max(floor, prev);
         });
       }, 500);
     } else if (status === 'done' || status === 'error') {
@@ -265,13 +372,13 @@ export default function Home() {
       setProgress(0);
     }
     return () => clearInterval(interval);
-  }, [status]);
+  }, [status, jobStatus]);
 
   const getButtonState = () => {
     switch (status) {
       case 'paying': return { text: 'Initializing Payment...', disabled: true, icon: <Loader2 className="spinner" /> };
-      case 'converting': return { text: 'Processing...', disabled: true, icon: <Loader2 className="spinner" /> };
-      case 'done': return { text: 'Convert Another', disabled: false, icon: null, action: () => { setFiles([]); setStatus('idle'); } };
+      case 'converting': return { text: activeJobId ? 'Tracking Job...' : 'Processing...', disabled: true, icon: <Loader2 className="spinner" /> };
+      case 'done': return { text: 'Convert Another', disabled: false, icon: null, action: () => { setFiles([]); setStatus('idle'); setJobStatus(null); setActiveJobId(null); } };
       default: return { 
         text: 'CONVERT TO PDF', 
         disabled: files.length === 0, 
@@ -284,6 +391,23 @@ export default function Home() {
   const btnState = getButtonState();
 
   const [compress, setCompress] = useState(false);
+
+  const getJobStageLabel = (stage) => {
+    switch (stage) {
+      case 'queued':
+        return 'Queued';
+      case 'retrying':
+        return 'Retrying';
+      case 'processing':
+        return 'Processing';
+      case 'completed':
+        return 'Completed';
+      case 'failed':
+        return 'Failed';
+      default:
+        return null;
+    }
+  };
 
   const Logo = () => (
     <div style={{ 
@@ -379,7 +503,7 @@ export default function Home() {
               <h3>Drag & Drop your files here</h3>
               <p style={{ marginTop: '0.5rem', color: '#000', fontWeight: 'bold' }}>OR CLICK TO BROWSE</p>
               <p style={{ fontSize: '0.85rem', fontWeight: 700, opacity: 0.6, marginTop: '1rem', fontStyle: 'italic' }}>
-                * Tip: Select multiple files (Word, Excel, Images, etc.) to combine them into one unified PDF.
+                * Tip: Select multiple files (Word, Images, Text, Markdown, etc.) to combine them into one unified PDF.
               </p>
               <input 
                 type="file" 
@@ -388,13 +512,14 @@ export default function Home() {
                 className="hidden" 
                 style={{ display: 'none' }}
                 multiple={true}
-                accept={
-                  fromFormat === 'word' ? '.doc,.docx' :
+                  accept={
+                  fromFormat === 'word' ? '.pdf,.doc,.docx,.odt,.rtf' :
                   fromFormat === 'excel' ? '.xls,.xlsx,.csv' :
                   fromFormat === 'ppt' ? '.ppt,.pptx' :
                   fromFormat === 'image' ? '.jpg,.jpeg,.png,.webp' :
                   fromFormat === 'md' ? '.md' :
                   fromFormat === 'text' ? '.txt' :
+                  fromFormat === 'auto' ? '.pdf,.doc,.docx,.odt,.rtf,.xls,.xlsx,.csv,.ppt,.pptx,.txt,.md,.png,.jpg,.jpeg,.webp' :
                   undefined
                 }
               />
@@ -463,7 +588,7 @@ export default function Home() {
             {(status === 'converting' || status === 'paying') && (
               <div style={{ marginTop: '2rem', textAlign: 'left' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.5rem', fontWeight: 900, textTransform: 'uppercase', fontSize: '0.8rem' }}>
-                  <span>{status === 'paying' ? 'Initializing Payment' : 'Converting...'}</span>
+                  <span>{status === 'paying' ? 'Initializing Payment' : activeJobId ? `Job ${getJobStageLabel(jobStatus) || 'Working'}` : 'Converting...'}</span>
                   <span>{Math.round(progress)}%</span>
                 </div>
                 <div style={{ 
@@ -480,6 +605,14 @@ export default function Home() {
                     borderRight: progress > 0 ? '3px solid #000' : 'none'
                   }} />
                 </div>
+                {activeJobId && (
+                  <div style={{ marginTop: '0.75rem', fontSize: '0.8rem', fontWeight: 800, textTransform: 'uppercase', opacity: 0.75 }}>
+                    Job status: {getJobStageLabel(jobStatus) || 'Starting'}
+                    {jobStatus === 'queued' ? ' - waiting for a worker' : ''}
+                    {jobStatus === 'retrying' ? ' - waiting for retry window' : ''}
+                    {jobStatus === 'processing' ? ' - converting your files' : ''}
+                  </div>
+                )}
               </div>
             )}
 

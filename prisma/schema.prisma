@@ -28,3 +28,56 @@ model UserUsage {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 }
+
+model RateLimitCounter {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  count     Int      @default(0)
+  resetAt   DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model ConversionJob {
+  id              String             @id @default(uuid())
+  ipHash          String
+  status          String             @default("queued") // queued, processing, completed, failed, cancelled
+  compress        Boolean            @default(false)
+  fileCount       Int                @default(0)
+  totalSize       Int                @default(0)
+  outputKey       String?
+  outputSize      Int?
+  errorMessage    String?
+  razorpayOrderId String?            @unique
+  razorpayPaymentId String?
+  paymentStatus   String             @default("pending") // pending, paid, failed, not_required
+  attempts        Int                @default(0)
+  nextRetryAt     DateTime?
+  startedAt       DateTime?
+  finishedAt      DateTime?
+  createdAt       DateTime           @default(now())
+  updatedAt       DateTime           @updatedAt
+
+  files           ConversionJobFile[]
+
+  @@index([ipHash])
+  @@index([status])
+  @@index([paymentStatus])
+  @@index([nextRetryAt])
+}
+
+model ConversionJobFile {
+  id           String        @id @default(uuid())
+  jobId        String
+  originalName String
+  mimeType     String?
+  size         Int
+  storageKey   String?
+  orderIndex   Int
+  createdAt    DateTime      @default(now())
+
+  job          ConversionJob @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([storageKey])
+}

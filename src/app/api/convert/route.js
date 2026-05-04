@@ -1,19 +1,27 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
-import { prisma } from '../../../lib/db';
 import path from 'path';
-import { PDFDocument } from 'pdf-lib';
-import libre from 'libreoffice-convert';
-import { promisify } from 'util';
-import { marked } from 'marked';
+import { prisma } from '../../../lib/db';
 import { rateLimit } from '../../../lib/rate-limit';
+import { getClientIp, hashIdentifier } from '../../../lib/request';
+import { requireRazorpayConfig } from '../../../lib/razorpay';
+import { allowedExtensions, maxFileSize } from '../../../lib/conversion.mjs';
+import {
+    writeJobArtifact,
+    deleteJobArtifacts,
+    deleteJobInputs,
+    deleteJobOutputs,
+} from '../../../lib/job-storage.mjs';
 
-const convertAsync = promisify(libre.convert);
+const maxFileCount = 10;
+const maxTotalUploadSize = 50 * 1024 * 1024;
 
 export async function POST(req) {
-    try {
-        const ip = req.headers.get('x-forwarded-for') || '127.0.0.1';
-        const limitResult = rateLimit(ip, 10, 60000); // 10 conversions per minute
+  let job = null;
+  try {
+        const ip = getClientIp(req);
+        const ipHash = hashIdentifier(ip);
+        const limitResult = await rateLimit(`convert:${ipHash}`, 10, 60000); // 10 conversions per minute
 
         if (!limitResult.success) {
             return NextResponse.json(
@@ -33,9 +41,22 @@ export async function POST(req) {
             return NextResponse.json({ success: false, message: 'Missing files' }, { status: 400 });
         }
 
-        // Anonymized IP hashing for tracking
-        const ipHash = crypto.createHash('sha256').update(ip).digest('hex');
-        
+        if (files.length > maxFileCount) {
+            return NextResponse.json(
+                { success: false, message: `Too many files. Maximum allowed is ${maxFileCount}.` },
+                { status: 400 }
+            );
+        }
+
+        const totalUploadSize = files.reduce((sum, file) => sum + (file?.size || 0), 0);
+
+        if (totalUploadSize > maxTotalUploadSize) {
+            return NextResponse.json(
+                { success: false, message: 'Total upload size exceeds the 50MB limit.' },
+                { status: 413 }
+            );
+        }
+
         let usage = await prisma.userUsage.findUnique({ where: { ipHash } });
         const canUseFree = !usage || !usage.usedFree;
         const isActuallyFree = (process.env.NEXT_PUBLIC_SKIP_PAYMENT === 'true') || canUseFree;
@@ -45,15 +66,27 @@ export async function POST(req) {
                 return NextResponse.json({ success: false, message: 'Free limit reached. Payment required.' }, { status: 402 });
             }
 
+            requireRazorpayConfig();
+
             const generated_signature = crypto
                 .createHmac('sha256', process.env.RAZORPAY_KEY_SECRET || 'secret_placeholder')
                 .update(orderId + '|' + paymentId)
                 .digest('hex');
 
             if (generated_signature !== signature) {
-                if (process.env.RAZORPAY_KEY_SECRET && process.env.RAZORPAY_KEY_SECRET !== 'secret_placeholder') {
-                    return NextResponse.json({ success: false, message: 'Invalid payment signature' }, { status: 400 });
-                }
+                return NextResponse.json({ success: false, message: 'Invalid payment signature' }, { status: 400 });
+            }
+
+            const dbOrder = await prisma.conversionOrder.findUnique({
+                where: { razorpayOrderId: orderId },
+            });
+
+            if (!dbOrder) {
+                return NextResponse.json({ success: false, message: 'Unknown payment order' }, { status: 404 });
+            }
+
+            if (dbOrder.status === 'completed') {
+                return NextResponse.json({ success: false, message: 'Order already used' }, { status: 409 });
             }
 
             await prisma.conversionOrder.update({
@@ -68,72 +101,115 @@ export async function POST(req) {
             });
         }
 
-        // --- MULTI-PAGE PDF GENERATION LOGIC ---
-        const mainPdfDoc = await PDFDocument.create();
-        let pdfHasContent = false;
+        job = await prisma.conversionJob.create({
+            data: {
+                ipHash,
+                compress,
+                fileCount: files.length,
+                totalSize: totalUploadSize,
+                razorpayOrderId: orderId || null,
+                razorpayPaymentId: paymentId || null,
+                paymentStatus: isActuallyFree ? 'not_required' : 'paid',
+                status: 'staging',
+                files: {
+                    create: files.map((file, index) => ({
+                        originalName: file.name,
+                        mimeType: file.type || null,
+                        size: file.size,
+                        orderIndex: index,
+                    })),
+                },
+            },
+            include: {
+                files: true,
+            },
+        });
+
+        const conversionFiles = [];
 
         for (const file of files) {
-            // 10MB File Size Limit per file
-            if (file.size > 10 * 1024 * 1024) continue;
+            if (file.size > maxFileSize) {
+                return NextResponse.json(
+                    { success: false, message: `File too large: ${file.name}` },
+                    { status: 413 }
+                );
+            }
 
             const arrayBuffer = await file.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
             const extension = path.extname(file.name).toLowerCase();
 
-            if (['.png', '.jpg', '.jpeg', '.webp'].includes(extension)) {
-                let image;
-                if (extension === '.png') {
-                    image = await mainPdfDoc.embedPng(buffer);
-                } else if (extension === '.webp') {
-                    throw new Error('WebP not natively supported yet in multi-merge. Use PNG/JPG.');
-                } else {
-                    image = await mainPdfDoc.embedJpg(buffer);
-                }
-                const page = mainPdfDoc.addPage();
-                const { width, height } = image.scale(1);
-                page.setSize(width, height);
-                page.drawImage(image, { x: 0, y: 0, width, height });
-                pdfHasContent = true;
-            } else {
-                let finalBuffer = buffer;
-                if (extension === '.md') {
-                    const htmlContent = `<!DOCTYPE html><html><head><meta charset="UTF-8"><style>@page { margin: 1in; } body { font-family: sans-serif; }</style></head><body>${marked.parse(buffer.toString())}</body></html>`;
-                    finalBuffer = Buffer.from(htmlContent);
-                }
-                const singlePdfBuffer = await convertAsync(finalBuffer, '.pdf', undefined);
-                const singlePdfDoc = await PDFDocument.load(singlePdfBuffer);
-                const copiedPages = await mainPdfDoc.copyPages(singlePdfDoc, singlePdfDoc.getPageIndices());
-                copiedPages.forEach((page) => mainPdfDoc.addPage(page));
-                pdfHasContent = true;
+            if (!allowedExtensions.has(extension)) {
+                return NextResponse.json(
+                    { success: false, message: `Unsupported file type: ${extension || 'unknown'}` },
+                    { status: 400 }
+                );
             }
-        }
 
-        if (!pdfHasContent) {
-            throw new Error('No valid content found for PDF generation');
-        }
+            const storageKey = job
+              ? await writeJobArtifact(job.id, conversionFiles.length, file.name, buffer)
+              : null;
 
-        const pdfBuffer = Buffer.from(await mainPdfDoc.save({
-            useObjectStreams: compress, // Enable object streams if compression requested
-            addDefaultPage: false,
-        }));
+            if (job && storageKey) {
+                await prisma.conversionJobFile.updateMany({
+                    where: {
+                        jobId: job.id,
+                        orderIndex: conversionFiles.length,
+                    },
+                    data: {
+                        storageKey,
+                    },
+                });
+            }
 
-        if (!isActuallyFree) {
-            await prisma.conversionOrder.update({
-                where: { razorpayOrderId: orderId },
-                data: { status: 'completed' },
+            conversionFiles.push({
+                name: file.name,
+                buffer,
+                storageKey,
             });
         }
 
-        return new Response(pdfBuffer, {
-            status: 200,
-            headers: {
-                'Content-Type': 'application/pdf',
-                'Content-Disposition': `attachment; filename="converted-document.pdf"`,
-            },
+        if (conversionFiles.length === 0) {
+            throw new Error('No valid content found for PDF generation');
+        }
+
+        await prisma.conversionJob.update({
+            where: { id: job.id },
+            data: { status: 'queued' },
         });
+
+        return NextResponse.json(
+            {
+                success: true,
+                message: 'Conversion job queued',
+                job: {
+                    id: job.id,
+                    status: 'queued',
+                    paymentStatus: isActuallyFree ? 'not_required' : 'paid',
+                    downloadUrl: `/api/jobs/${job.id}/download`,
+                    statusUrl: `/api/jobs/${job.id}`,
+                },
+            },
+            { status: 202 }
+        );
 
     } catch (error) {
         console.error('Error in conversion:', error);
+
+        if (job?.id) {
+            await prisma.conversionJob.update({
+                where: { id: job.id },
+                data: {
+                    status: 'failed',
+                    finishedAt: new Date(),
+                    errorMessage: error.message,
+                },
+            }).catch(() => {});
+
+            await deleteJobArtifacts(job.id).catch(() => {});
+            await deleteJobOutputs(job.id).catch(() => {});
+        }
+
         return NextResponse.json(
              { success: false, message: 'Conversion failed', error: error.message },
              { status: 500 }

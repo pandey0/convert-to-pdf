@@ -1,6 +1,6 @@
 export default function HowToPage() {
   const steps = [
-    { title: "Select Source Format", description: "Choose the file type you want to convert (Word, Excel, Images, etc.) from the dropdown." },
+    { title: "Select Source Format", description: "Choose the file type you want to convert (Word, Excel, PowerPoint, PDF, Images, Text, Markdown, etc.) from the dropdown." },
     { title: "Upload Files", description: "Drag and drop one or multiple files into the yellow box or click to browse your computer." },
     { title: "Review & Merge", description: "Use the arrows to reorder your files. Our system will merge them all into a single, high-fidelity PDF document." },
     { title: "Convert & Download", description: "Pay a small fee (or use free daily allowance) to generate your high-fidelity PDF instantly." }

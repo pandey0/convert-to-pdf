@@ -1,31 +1,64 @@
-// Simple in-memory rate limiter for the monolith
-// This resets when the server restarts, which is fine for basic protection.
-
-const rateLimitMap = new Map();
+import { prisma } from './db';
 
 /**
- * Rate limiter function
- * @param {string} ip - The IP address to limit
- * @param {number} limit - Max requests per window
- * @param {number} windowMs - Time window in milliseconds
- * @returns {Object} { success: boolean, remaining: number }
+ * Persistent rate limiter backed by the database.
+ * The caller should pass a stable key, such as a route + hashed IP.
  */
-export function rateLimit(ip, limit = 10, windowMs = 60000) {
-  const now = Date.now();
-  const userData = rateLimitMap.get(ip) || { count: 0, resetTime: now + windowMs };
+export async function rateLimit(key, limit = 10, windowMs = 60000) {
+  const now = new Date();
+  const resetAt = new Date(now.getTime() + windowMs);
 
-  // If window expired, reset
-  if (now > userData.resetTime) {
-    userData.count = 0;
-    userData.resetTime = now + windowMs;
+  await prisma.rateLimitCounter.deleteMany({
+    where: {
+      resetAt: {
+        lt: now,
+      },
+    },
+  });
+
+  const existing = await prisma.rateLimitCounter.findUnique({
+    where: { key },
+  });
+
+  if (!existing || existing.resetAt <= now) {
+    await prisma.rateLimitCounter.upsert({
+      where: { key },
+      update: {
+        count: 1,
+        resetAt,
+      },
+      create: {
+        key,
+        count: 1,
+        resetAt,
+      },
+    });
+
+    return {
+      success: true,
+      remaining: Math.max(0, limit - 1),
+      resetTime: resetAt,
+    };
   }
 
-  userData.count += 1;
-  rateLimitMap.set(ip, userData);
+  if (existing.count >= limit) {
+    return {
+      success: false,
+      remaining: 0,
+      resetTime: existing.resetAt,
+    };
+  }
+
+  const updated = await prisma.rateLimitCounter.update({
+    where: { key },
+    data: {
+      count: { increment: 1 },
+    },
+  });
 
   return {
-    success: userData.count <= limit,
-    remaining: Math.max(0, limit - userData.count),
-    resetTime: userData.resetTime
+    success: updated.count <= limit,
+    remaining: Math.max(0, limit - updated.count),
+    resetTime: updated.resetAt,
   };
 }
