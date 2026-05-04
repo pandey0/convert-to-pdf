@@ -59,7 +59,13 @@ export default function Home() {
       const dropFiles = Array.from(e.dataTransfer.files);
       if (dropFiles[0]) {
         const detected = mapExtensions(dropFiles[0].name);
-        if (detected !== 'auto') setFromFormat(detected);
+        if (files.length === 0) {
+          // First upload: snap to type
+          if (detected !== 'auto') setFromFormat(detected);
+        } else if (fromFormat !== 'auto' && detected !== fromFormat) {
+          // Subsequent mixed upload: switch to universal auto
+          setFromFormat('auto');
+        }
       }
       const newFiles = dropFiles.map(file => {
         if (file.type.startsWith('image/')) {
@@ -77,7 +83,13 @@ export default function Home() {
       const selectedFiles = Array.from(e.target.files);
       if (selectedFiles[0]) {
         const detected = mapExtensions(selectedFiles[0].name);
-        if (detected !== 'auto') setFromFormat(detected);
+        if (files.length === 0) {
+          // First upload: snap to type
+          if (detected !== 'auto') setFromFormat(detected);
+        } else if (fromFormat !== 'auto' && detected !== fromFormat) {
+          // Subsequent mixed upload: switch to universal auto
+          setFromFormat('auto');
+        }
       }
       const newFiles = selectedFiles.map(file => {
         if (file.type.startsWith('image/')) {
@@ -328,6 +340,9 @@ export default function Home() {
                   <option value="text">Text File</option>
                   <option value="md">Markdown (.md)</option>
                 </select>
+                <p style={{ fontSize: '0.7rem', fontWeight: 800, marginTop: '0.5rem', opacity: 0.6, letterSpacing: '0.02em' }}>
+                  * Use "Auto Detect" to merge different file types.
+                </p>
               </div>
               
               <div className="arrow-divider">→</div>

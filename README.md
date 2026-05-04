@@ -1,5 +1,9 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://github.com/vercel/next.js/tree/canary/packages/create-next-app).
 
+For Docker setup and run instructions, see [DOCKER.md](/home/dell/COurse/cash/convert-to-pdf/DOCKER.md).
+
+Database note: local Docker development uses a local Postgres container, while production is intended to use Neon Postgres with Prisma migrations.
+
 ## Getting Started
 
 First, run the development server:
