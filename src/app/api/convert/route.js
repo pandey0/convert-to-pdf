@@ -30,7 +30,16 @@ export async function POST(req) {
             );
         }
 
-        const formData = await req.formData();
+        let formData;
+        try {
+            formData = await req.formData();
+        } catch {
+            return NextResponse.json(
+                { success: false, message: 'Invalid form data' },
+                { status: 400 }
+            );
+        }
+
         const files = formData.getAll('file'); // Get all files in the queue
         const compress = formData.get('compress') === 'true';
         const orderId = formData.get('razorpay_order_id');
@@ -55,6 +64,24 @@ export async function POST(req) {
                 { success: false, message: 'Total upload size exceeds the 50MB limit.' },
                 { status: 413 }
             );
+        }
+
+        for (const file of files) {
+            if (file.size > maxFileSize) {
+                return NextResponse.json(
+                    { success: false, message: `File too large: ${file.name}` },
+                    { status: 413 }
+                );
+            }
+
+            const extension = path.extname(file.name).toLowerCase();
+
+            if (!allowedExtensions.has(extension)) {
+                return NextResponse.json(
+                    { success: false, message: `Unsupported file type: ${extension || 'unknown'}` },
+                    { status: 400 }
+                );
+            }
         }
 
         let usage = await prisma.userUsage.findUnique({ where: { ipHash } });
@@ -128,39 +155,20 @@ export async function POST(req) {
         const conversionFiles = [];
 
         for (const file of files) {
-            if (file.size > maxFileSize) {
-                return NextResponse.json(
-                    { success: false, message: `File too large: ${file.name}` },
-                    { status: 413 }
-                );
-            }
-
             const arrayBuffer = await file.arrayBuffer();
             const buffer = Buffer.from(arrayBuffer);
-            const extension = path.extname(file.name).toLowerCase();
 
-            if (!allowedExtensions.has(extension)) {
-                return NextResponse.json(
-                    { success: false, message: `Unsupported file type: ${extension || 'unknown'}` },
-                    { status: 400 }
-                );
-            }
+            const storageKey = await writeJobArtifact(job.id, conversionFiles.length, file.name, buffer);
 
-            const storageKey = job
-              ? await writeJobArtifact(job.id, conversionFiles.length, file.name, buffer)
-              : null;
-
-            if (job && storageKey) {
-                await prisma.conversionJobFile.updateMany({
-                    where: {
-                        jobId: job.id,
-                        orderIndex: conversionFiles.length,
-                    },
-                    data: {
-                        storageKey,
-                    },
-                });
-            }
+            await prisma.conversionJobFile.updateMany({
+                where: {
+                    jobId: job.id,
+                    orderIndex: conversionFiles.length,
+                },
+                data: {
+                    storageKey,
+                },
+            });
 
             conversionFiles.push({
                 name: file.name,

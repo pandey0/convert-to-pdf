@@ -1,9 +1,19 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '../../../../lib/db.mjs';
 
+const uuidPattern = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+
 export async function GET(_req, { params }) {
   try {
     const { id } = await params;
+
+    if (!uuidPattern.test(id)) {
+      return NextResponse.json(
+        { success: false, message: 'Job not found' },
+        { status: 404 }
+      );
+    }
+
     const job = await prisma.conversionJob.findUnique({
       where: { id },
       select: {
@@ -55,8 +65,9 @@ export async function GET(_req, { params }) {
       },
     });
   } catch (error) {
+    console.error('Error fetching job:', error);
     return NextResponse.json(
-      { success: false, message: 'Failed to fetch job', error: error.message },
+      { success: false, message: 'Failed to fetch job' },
       { status: 500 }
     );
   }

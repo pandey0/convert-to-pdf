@@ -162,6 +162,24 @@ async function claimNextQueuedJob() {
   };
 }
 
+const safeErrorPrefixes = [
+  'Unsupported file type:',
+  'File too large:',
+  'Missing files',
+  'Too many files',
+  'Total upload size exceeds',
+  'No valid content found for PDF generation',
+  'Missing storage artifact for',
+];
+
+function sanitizeErrorMessage(error) {
+  const message = error?.message || '';
+  if (safeErrorPrefixes.some((prefix) => message.startsWith(prefix))) {
+    return message;
+  }
+  return 'Unable to convert file: the document is invalid, corrupted, or unsupported.';
+}
+
 let isPolling = false;
 
 async function processQueuedJobs() {
@@ -180,19 +198,20 @@ async function processQueuedJobs() {
 
         const shouldRetry = job.attempts < maxAttempts;
         const retryDelay = retryBaseDelayMs * Math.pow(2, Math.max(0, job.attempts - 1));
+        const errorMessage = sanitizeErrorMessage(error);
 
         await prisma.conversionJob.update({
           where: { id: job.id },
           data: shouldRetry
             ? {
                 status: 'queued',
-                errorMessage: error.message,
+                errorMessage,
                 nextRetryAt: new Date(Date.now() + retryDelay),
               }
             : {
                 status: 'failed',
                 finishedAt: new Date(),
-                errorMessage: error.message,
+                errorMessage,
                 nextRetryAt: null,
               },
         }).catch(() => {});
