@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '../../../../lib/db';
+import { prisma } from '../../../../lib/db.mjs';
 import { ADMIN_SESSION_COOKIE, isAdminCookieValid, isAdminTokenValid } from '../../../../lib/admin-auth';
 
 function readBearerToken(headerValue) {

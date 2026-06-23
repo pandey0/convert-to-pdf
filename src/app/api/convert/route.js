@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import crypto from 'crypto';
 import path from 'path';
-import { prisma } from '../../../lib/db';
+import { prisma } from '../../../lib/db.mjs';
 import { rateLimit } from '../../../lib/rate-limit';
 import { getClientIp, hashIdentifier } from '../../../lib/request';
 import { requireRazorpayConfig } from '../../../lib/razorpay';

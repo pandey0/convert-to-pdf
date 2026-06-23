@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { razorpay, requireRazorpayConfig } from '../../../lib/razorpay';
-import { prisma } from '../../../lib/db';
+import { prisma } from '../../../lib/db.mjs';
 import { rateLimit } from '../../../lib/rate-limit';
 import { isUserInIndia } from '../../../lib/geo';
 import { getClientIp, hashIdentifier } from '../../../lib/request';
