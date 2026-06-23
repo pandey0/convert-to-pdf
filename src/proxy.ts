@@ -1,5 +1,5 @@
 import { NextResponse, type NextRequest } from 'next/server';
-import { ADMIN_SESSION_COOKIE } from './src/lib/admin-auth';
+import { ADMIN_SESSION_COOKIE, isAdminCookieValid } from './lib/admin-auth';
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -18,7 +18,7 @@ export function proxy(request: NextRequest) {
   }
 
   const session = request.cookies.get(ADMIN_SESSION_COOKIE)?.value;
-  const isAuthed = session === '1';
+  const isAuthed = isAdminCookieValid(session);
 
   if (isAuthed) {
     return NextResponse.next();
