@@ -1,10 +1,11 @@
 import { NextResponse } from 'next/server';
-import { prisma } from '../../../../lib/db';
+import { prisma } from '../../../../lib/db.mjs';
 
 export async function GET(_req, { params }) {
   try {
+    const { id } = await params;
     const job = await prisma.conversionJob.findUnique({
-      where: { id: params.id },
+      where: { id },
       select: {
         id: true,
         status: true,

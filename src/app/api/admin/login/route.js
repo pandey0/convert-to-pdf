@@ -14,7 +14,16 @@ export async function POST(req) {
     }
 
     const response = NextResponse.json({ success: true, message: 'Admin session created' });
-    response.cookies.set(ADMIN_SESSION_COOKIE, createAdminCookieValue(), {
+    const cookieValue = createAdminCookieValue();
+
+    if (!cookieValue) {
+      return NextResponse.json(
+        { success: false, message: 'Admin access is not configured' },
+        { status: 503 }
+      );
+    }
+
+    response.cookies.set(ADMIN_SESSION_COOKIE, cookieValue, {
       httpOnly: true,
       sameSite: 'strict',
       secure: process.env.NODE_ENV === 'production',
