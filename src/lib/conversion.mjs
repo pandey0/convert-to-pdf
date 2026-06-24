@@ -1,14 +1,14 @@
 import path from 'path';
 import { promisify } from 'util';
 import libre from 'libreoffice-convert';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, StandardFonts, rgb, degrees } from 'pdf-lib';
 import { marked } from 'marked';
 
 const convertAsync = promisify(libre.convert);
 export const allowedExtensions = new Set(['.pdf', '.doc', '.docx', '.odt', '.rtf', '.txt', '.md', '.xls', '.xlsx', '.csv', '.ppt', '.pptx', '.png', '.jpg', '.jpeg']);
 export const maxFileSize = 10 * 1024 * 1024;
 
-export async function convertFilesToPdfBuffer(files, compress = false) {
+export async function convertFilesToPdfBuffer(files, compress = false, options = {}) {
   const mainPdfDoc = await PDFDocument.create();
   let pdfHasContent = false;
 
@@ -61,6 +61,43 @@ export async function convertFilesToPdfBuffer(files, compress = false) {
 
   if (!pdfHasContent) {
     throw new Error('No valid content found for PDF generation');
+  }
+
+  if (options.pageNumbers || options.watermarkText) {
+    const font = await mainPdfDoc.embedFont(StandardFonts.Helvetica);
+    const pages = mainPdfDoc.getPages();
+    const total = pages.length;
+
+    pages.forEach((page, i) => {
+      const { width, height } = page.getSize();
+
+      if (options.pageNumbers) {
+        const label = `${i + 1} / ${total}`;
+        const size = 9;
+        const textWidth = font.widthOfTextAtSize(label, size);
+        page.drawText(label, {
+          x: (width - textWidth) / 2,
+          y: 20,
+          size,
+          font,
+          color: rgb(0.4, 0.4, 0.4),
+        });
+      }
+
+      if (options.watermarkText) {
+        const size = 48;
+        const textWidth = font.widthOfTextAtSize(options.watermarkText, size);
+        page.drawText(options.watermarkText, {
+          x: (width - textWidth) / 2,
+          y: height / 2,
+          size,
+          font,
+          color: rgb(0.4, 0.4, 0.4),
+          opacity: 0.15,
+          rotate: degrees(45),
+        });
+      }
+    });
   }
 
   return Buffer.from(

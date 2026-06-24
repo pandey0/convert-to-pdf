@@ -1,5 +1,7 @@
 # convert-to-pdf
 
+[![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](./LICENSE)
+
 Convert Word, Excel, PowerPoint, Markdown, and image files to PDF — entirely locally, with no third-party conversion API in the loop.
 
 ## What it does
@@ -57,6 +59,10 @@ Deployment guides are included for two paths:
 - [`deployment-aws.md`](./deployment-aws.md) — AWS (EC2 + Docker + Neon Postgres + Caddy/Nginx)
 
 Both assume the Docker-based setup described in [`DOCKER.md`](./DOCKER.md).
+
+## API
+
+For integrators: see [`API.md`](./API.md) for the full HTTP endpoint reference (request/response shapes, auth, rate limits, error codes).
 
 ## A note on this codebase
 

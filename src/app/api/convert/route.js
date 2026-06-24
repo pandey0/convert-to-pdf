@@ -45,6 +45,26 @@ export async function POST(req) {
         const orderId = formData.get('razorpay_order_id');
         const paymentId = formData.get('razorpay_payment_id');
         const signature = formData.get('razorpay_signature');
+        const webhookUrl = formData.get('webhookUrl') || null;
+        const pageNumbers = formData.get('pageNumbers') === 'true';
+        const watermarkText = formData.get('watermarkText') || null;
+
+        if (webhookUrl) {
+            try {
+                const parsedWebhookUrl = new URL(webhookUrl);
+                if (parsedWebhookUrl.protocol !== 'http:' && parsedWebhookUrl.protocol !== 'https:') {
+                    throw new Error('Invalid protocol');
+                }
+            } catch {
+                // Known limitation: we only validate that this parses as an http(s) URL.
+                // Full SSRF protection (resolving the hostname and rejecting private/internal
+                // IP ranges) is intentionally out of scope for this pass.
+                return NextResponse.json(
+                    { success: false, message: 'Invalid webhook URL' },
+                    { status: 400 }
+                );
+            }
+        }
 
         if (files.length === 0) {
             return NextResponse.json({ success: false, message: 'Missing files' }, { status: 400 });
@@ -138,6 +158,9 @@ export async function POST(req) {
                 razorpayPaymentId: paymentId || null,
                 paymentStatus: isActuallyFree ? 'not_required' : 'paid',
                 status: 'staging',
+                webhookUrl,
+                pageNumbers,
+                watermarkText,
                 files: {
                     create: files.map((file, index) => ({
                         originalName: file.name,

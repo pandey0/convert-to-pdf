@@ -3,6 +3,7 @@ import path from 'path';
 import { prisma } from '../src/lib/db.mjs';
 import { allowedExtensions, maxFileSize, convertFilesToPdfBuffer } from '../src/lib/conversion.mjs';
 import { readJobArtifact, writeJobOutputArtifact, deleteJobInputs } from '../src/lib/job-storage.mjs';
+import { sendJobWebhook } from '../src/lib/webhook.mjs';
 
 const port = Number(process.env.CONVERSION_WORKER_PORT || 4000);
 const workerToken = process.env.CONVERSION_WORKER_TOKEN || '';
@@ -92,7 +93,8 @@ async function processQueuedJob(job) {
         };
       })
     ),
-    job.compress
+    job.compress,
+    { pageNumbers: job.pageNumbers, watermarkText: job.watermarkText }
   );
 
   const outputKey = await writeJobOutputArtifact(job.id, pdfBuffer);
@@ -117,6 +119,22 @@ async function processQueuedJob(job) {
   }
 
   await deleteJobInputs(job.id);
+
+  try {
+    await sendJobWebhook(job, {
+      jobId: job.id,
+      status: 'completed',
+      downloadUrl: `/api/jobs/${job.id}/download`,
+    });
+    if (job.webhookUrl) {
+      await prisma.conversionJob.update({
+        where: { id: job.id },
+        data: { webhookSentAt: new Date() },
+      }).catch(() => {});
+    }
+  } catch (error) {
+    console.error('Failed to send completion webhook:', error);
+  }
 }
 
 async function claimNextQueuedJob() {
@@ -218,6 +236,17 @@ async function processQueuedJobs() {
 
         if (!shouldRetry) {
           await deleteJobInputs(job.id).catch(() => {});
+          await sendJobWebhook(job, {
+            jobId: job.id,
+            status: 'failed',
+            errorMessage,
+          }).catch(() => {});
+          if (job.webhookUrl) {
+            await prisma.conversionJob.update({
+              where: { id: job.id },
+              data: { webhookSentAt: new Date() },
+            }).catch(() => {});
+          }
         }
       }
     }

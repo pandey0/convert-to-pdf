@@ -13,6 +13,9 @@ export default function Home() {
   const [errorMessage, setErrorMessage] = useState("");
   const [activeJobId, setActiveJobId] = useState(null);
   const [jobStatus, setJobStatus] = useState(null);
+  const [webhookUrl, setWebhookUrl] = useState('');
+  const [pageNumbers, setPageNumbers] = useState(false);
+  const [watermarkText, setWatermarkText] = useState('');
   const fileInputRef = useRef(null);
   const supportedExtensions = ['doc', 'docx', 'odt', 'rtf', 'pdf', 'xls', 'xlsx', 'csv', 'ppt', 'pptx', 'png', 'jpg', 'jpeg', 'webp', 'txt', 'md'];
 
@@ -160,7 +163,10 @@ export default function Home() {
       formData.append('file', f);
     });
     formData.append('compress', compress ? 'true' : 'false');
-    
+    if (webhookUrl) formData.append('webhookUrl', webhookUrl);
+    formData.append('pageNumbers', String(pageNumbers));
+    if (watermarkText) formData.append('watermarkText', watermarkText);
+
     if (paymentDetails.bypass) {
       formData.append('bypass_payment', 'true');
     } else {
@@ -257,6 +263,9 @@ export default function Home() {
       files.forEach(f => formData.append('file', f));
       formData.append('compress', compress ? 'true' : 'false');
       formData.append('bypass_payment', 'true');
+      if (webhookUrl) formData.append('webhookUrl', webhookUrl);
+      formData.append('pageNumbers', String(pageNumbers));
+      if (watermarkText) formData.append('watermarkText', watermarkText);
 
       const freeRes = await fetch('/api/convert', { method: 'POST', body: formData });
 
@@ -492,7 +501,55 @@ export default function Home() {
                </label>
             </div>
 
-            <div 
+            <details style={{ border: '3px solid #000', marginBottom: '1.5rem', backgroundColor: '#f9f9f9' }}>
+              <summary style={{ padding: '1rem', fontWeight: 900, textTransform: 'uppercase', cursor: 'pointer' }}>
+                Advanced Options
+              </summary>
+              <div style={{ padding: '0 1rem 1rem 1rem', display: 'grid', gap: '1rem' }}>
+                <div>
+                  <label htmlFor="webhook-url" style={{ fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', display: 'block', marginBottom: '0.35rem' }}>
+                    Webhook URL (optional)
+                  </label>
+                  <input
+                    type="text"
+                    id="webhook-url"
+                    value={webhookUrl}
+                    onChange={(e) => setWebhookUrl(e.target.value)}
+                    placeholder="https://example.com/webhook"
+                    style={{ width: '100%', padding: '0.6rem', border: '3px solid #000', fontWeight: 600 }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <input
+                    type="checkbox"
+                    id="page-numbers"
+                    checked={pageNumbers}
+                    onChange={(e) => setPageNumbers(e.target.checked)}
+                    style={{ width: '20px', height: '20px', accentColor: '#000', cursor: 'pointer' }}
+                  />
+                  <label htmlFor="page-numbers" style={{ fontWeight: 900, textTransform: 'uppercase', cursor: 'pointer' }}>
+                    Add page numbers
+                  </label>
+                </div>
+
+                <div>
+                  <label htmlFor="watermark-text" style={{ fontWeight: 700, fontSize: '0.8rem', textTransform: 'uppercase', display: 'block', marginBottom: '0.35rem' }}>
+                    Watermark text (optional)
+                  </label>
+                  <input
+                    type="text"
+                    id="watermark-text"
+                    value={watermarkText}
+                    onChange={(e) => setWatermarkText(e.target.value)}
+                    placeholder="e.g. CONFIDENTIAL"
+                    style={{ width: '100%', padding: '0.6rem', border: '3px solid #000', fontWeight: 600 }}
+                  />
+                </div>
+              </div>
+            </details>
+
+            <div
               className={`dropzone ${isDragging ? 'active' : ''}`}
               onDragOver={handleDragOver}
               onDragLeave={handleDragLeave}
