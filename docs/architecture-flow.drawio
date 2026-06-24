@@ -1,0 +1,424 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mxfile host="app.diagrams.net" agent="claude-code" version="24.0.0" type="device">
+  <diagram id="architecture-flow" name="Architecture Flow">
+    <mxGraphModel dx="2200" dy="1400" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1900" pageHeight="2300" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- ================= BROWSER / CLIENT ================= -->
+        <mxCell id="browser" value="Browser / Client" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;fontStyle=1;fontSize=16;verticalAlign=top;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="40" y="40" width="220" height="100" as="geometry" />
+        </mxCell>
+        <mxCell id="browser-icon" value="End user uploading files,&#10;polling job status,&#10;downloading PDF" style="text;html=1;align=center;verticalAlign=middle;fontSize=11;fontColor=#444444;" vertex="1" parent="1">
+          <mxGeometry x="40" y="70" width="220" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ================= APP CONTAINER GROUP ================= -->
+        <mxCell id="app-group" value="Docker container: app  (Next.js, port 3000)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;verticalAlign=top;fontStyle=1;fontSize=16;spacingTop=8;align=center;" vertex="1" parent="1">
+          <mxGeometry x="320" y="40" width="1180" height="700" as="geometry" />
+        </mxCell>
+
+        <mxCell id="proxy" value="src/proxy.ts&#10;(gate, runs before routes;&#10;matches /admin/* + /api/admin/*)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="360" y="90" width="240" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- Page routes -->
+        <mxCell id="pages-label" value="Page routes" style="text;html=1;align=left;fontStyle=1;fontSize=12;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="360" y="165" width="160" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="page-home" value="/  (upload UI)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="360" y="190" width="150" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="page-admin" value="/admin" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="520" y="190" width="150" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="page-admin-login" value="/admin/login" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="680" y="190" width="150" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="page-about" value="/about" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="840" y="190" width="120" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="page-pricing" value="/pricing" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="970" y="190" width="120" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="page-howto" value="/how-to-use" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#6c8ebf;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1100" y="190" width="130" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- API routes -->
+        <mxCell id="api-label" value="API routes" style="text;html=1;align=left;fontStyle=1;fontSize=12;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="360" y="250" width="160" height="20" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api-convert" value="POST /api/convert" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1a73e8;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="278" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="api-create-order" value="POST /api/create-order" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1a73e8;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="550" y="278" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="api-job-status" value="GET /api/jobs/:id" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1a73e8;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="750" y="278" width="170" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="api-job-download" value="GET /api/jobs/:id/download" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1a73e8;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="940" y="278" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="api-worker-health" value="GET /api/worker-health" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#1a73e8;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1160" y="278" width="180" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="api-admin-login" value="POST /api/admin/login" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="335" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="api-admin-logout" value="POST /api/admin/logout" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="560" y="335" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="api-admin-metrics" value="GET /api/admin/metrics" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#9673a6;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="335" width="180" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Shared libs -->
+        <mxCell id="libs-label" value="Shared libs" style="text;html=1;align=left;fontStyle=1;fontSize=12;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="360" y="395" width="160" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="lib-rate-limit" value="src/lib/rate-limit.js" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="360" y="422" width="150" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="lib-admin-auth" value="src/lib/admin-auth.js" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="525" y="422" width="150" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="lib-razorpay" value="src/lib/razorpay.js" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="690" y="422" width="150" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="lib-geo" value="src/lib/geo.js" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="855" y="422" width="150" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="lib-job-storage" value="src/lib/job-storage.mjs" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1020" y="422" width="150" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="lib-db" value="src/lib/db.mjs&#10;(Prisma client)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#e1d5e7;strokeColor=#9673a6;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1185" y="422" width="150" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- key business-logic notes inside app group -->
+        <mxCell id="note-free-tier" value="UserUsage table tracks free-tier IP hash;&#10;NEXT_PUBLIC_SKIP_PAYMENT=true bypasses payment" style="text;html=1;align=left;fontSize=10;fontColor=#555555;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="360" y="480" width="330" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- ================= WORKER CONTAINER GROUP ================= -->
+        <mxCell id="worker-group" value="Docker container: worker (Node.js, port 4000 internal)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;verticalAlign=top;fontStyle=1;fontSize=16;spacingTop=8;align=center;" vertex="1" parent="1">
+          <mxGeometry x="320" y="800" width="1180" height="380" as="geometry" />
+        </mxCell>
+
+        <mxCell id="worker-poll" value="Poll loop&#10;claimNextQueuedJob() -&gt; processQueuedJob()&#10;every CONVERSION_WORKER_POLL_INTERVAL_MS (default 5000ms)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="360" y="850" width="340" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="worker-conversion-lib" value="src/lib/conversion.mjs&#10;convertFilesToPdfBuffer()&#10;LibreOffice + pdf-lib + marked" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#82b366;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="760" y="850" width="280" height="70" as="geometry" />
+        </mxCell>
+
+        <mxCell id="worker-retry-note" value="On failure: attempts &lt; CONVERSION_WORKER_MAX_ATTEMPTS (default 3)&#10;-&gt; requeue with exponential backoff (CONVERSION_WORKER_RETRY_BASE_DELAY_MS);&#10;else -&gt; status=failed" style="text;html=1;align=left;fontSize=10;fontColor=#555555;fontStyle=2;" vertex="1" parent="1">
+          <mxGeometry x="1070" y="845" width="400" height="60" as="geometry" />
+        </mxCell>
+
+        <mxCell id="worker-legacy-group" value="Legacy / internal-only HTTP endpoints (not used by the main job-queue flow)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;verticalAlign=top;fontSize=11;fontStyle=2;align=center;" vertex="1" parent="1">
+          <mxGeometry x="360" y="945" width="680" height="190" as="geometry" />
+        </mxCell>
+        <mxCell id="worker-legacy-convert" value="POST /convert&#10;(token-gated via&#10;x-conversion-worker-token /&#10;CONVERSION_WORKER_TOKEN)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;dashed=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="390" y="985" width="280" height="80" as="geometry" />
+        </mxCell>
+        <mxCell id="worker-legacy-health" value="GET /health&#10;(used by docker-compose&#10;healthcheck and&#10;/api/worker-health)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#999999;dashed=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="700" y="985" width="300" height="80" as="geometry" />
+        </mxCell>
+
+        <!-- ================= DB CONTAINER GROUP ================= -->
+        <mxCell id="db-group" value="Docker container: db (Postgres)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;verticalAlign=top;fontStyle=1;fontSize=16;spacingTop=8;align=center;" vertex="1" parent="1">
+          <mxGeometry x="40" y="800" width="240" height="380" as="geometry" />
+        </mxCell>
+
+        <mxCell id="db-cylinder" value="Postgres&#10;(prisma/schema.prisma)" style="shape=cylinder3;whiteSpace=wrap;html=1;boundedLbl=1;backgroundOutline=1;size=15;fillColor=#f8cecc;strokeColor=#b85450;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="100" y="845" width="120" height="80" as="geometry" />
+        </mxCell>
+
+        <mxCell id="db-tables" value="Tables:&#10;- ConversionJob&#10;- ConversionJobFile&#10;- ConversionOrder&#10;- UserUsage&#10;- RateLimitCounter" style="text;html=1;align=left;verticalAlign=top;fontSize=11;fontColor=#333333;" vertex="1" parent="1">
+          <mxGeometry x="60" y="945" width="200" height="140" as="geometry" />
+        </mxCell>
+
+        <!-- ================= JOB STORAGE VOLUME ================= -->
+        <mxCell id="volume" value="job_storage volume&#10;(mounted at /data in&#10;both app + worker)&#10;JOB_STORAGE_ROOT=/data/job-artifacts" style="shape=folder;whiteSpace=wrap;html=1;tabWidth=60;tabHeight=22;tabPosition=left;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=11;fontStyle=1;verticalAlign=middle;" vertex="1" parent="1">
+          <mxGeometry x="1550" y="900" width="260" height="120" as="geometry" />
+        </mxCell>
+
+        <!-- ================= EXTERNAL SERVICES ================= -->
+        <mxCell id="external-group" value="External services" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;verticalAlign=top;fontStyle=1;fontSize=16;spacingTop=8;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1550" y="40" width="260" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-razorpay" value="Razorpay API&#10;(payment orders)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="90" width="200" height="60" as="geometry" />
+        </mxCell>
+        <mxCell id="ext-ipapi" value="ipapi.co&#10;(geo IP lookup for pricing)" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#d79b00;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="1580" y="170" width="200" height="60" as="geometry" />
+        </mxCell>
+
+        <!-- ================= EDGES ================= -->
+
+        <!-- Browser interactions -->
+        <mxCell id="e-browser-pages" value="loads pages" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;exitX=1;exitY=0.3;entryX=0;entryY=0.5;" edge="1" parent="1" source="browser" target="page-home">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <mxCell id="e-browser-convert" value="1. uploads file(s)&#10;POST multipart/form-data" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;strokeColor=#1a73e8;exitX=1;exitY=0.7;entryX=0;entryY=0.3;" edge="1" parent="1" source="browser" target="api-convert">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="300" y="298" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="e-browser-job-status" value="3. polls job status&#10;GET /api/jobs/:id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;exitX=1;exitY=0.85;entryX=0;entryY=0.3;" edge="1" parent="1" source="browser" target="api-job-status">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="300" y="500" />
+              <mxPoint x="300" y="298" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="e-browser-download" value="4. downloads PDF when&#10;status=completed" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;exitX=1;exitY=0.95;entryX=0;entryY=0.7;" edge="1" parent="1" source="browser" target="api-job-download">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="290" y="540" />
+              <mxPoint x="290" y="318" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <mxCell id="e-browser-admin" value="visits /admin/* or&#10;/api/admin/*" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;exitX=0.7;exitY=1;entryX=0.2;entryY=0;" edge="1" parent="1" source="browser" target="proxy">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- Proxy gate -->
+        <mxCell id="e-proxy-admin-auth" value="validates signed cookie" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;exitX=0.5;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="proxy" target="lib-admin-auth">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="480" y="410" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-proxy-allow" value="allow (next) or&#10;redirect /admin/login&#10;or 401 JSON" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;exitX=0;exitY=0.5;entryX=0;entryY=0.2;" edge="1" parent="1" source="proxy" target="page-admin">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="340" y="120" />
+              <mxPoint x="340" y="208" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- /api/convert flow -->
+        <mxCell id="e-convert-ratelimit" value="2a. rate limit&#10;10 / 60s per IP hash" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;exitX=0.3;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="api-convert" target="lib-rate-limit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-convert-db" value="2b. create ConversionJob +&#10;ConversionJobFile rows&#10;(status=staging -&gt; queued)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;exitX=0.8;exitY=1;entryX=0.5;entryY=0;strokeColor=#b85450;" edge="1" parent="1" source="api-convert" target="lib-db">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1260" y="460" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-convert-jobstorage" value="2c. writes input files&#10;via writeJobArtifact()" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;exitX=0.5;exitY=1;entryX=0.3;entryY=0;strokeColor=#d6b656;" edge="1" parent="1" source="api-convert" target="lib-job-storage">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-jobstorage-volume" value="reads/writes&#10;/data/job-artifacts/&lt;jobId&gt;" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;exitX=1;exitY=0.5;entryX=0;entryY=0.3;strokeColor=#d6b656;" edge="1" parent="1" source="lib-job-storage" target="volume">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1500" y="440" />
+              <mxPoint x="1500" y="930" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-convert-respond" value="responds 202 Accepted&#10;{ id, statusUrl, downloadUrl }" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;exitX=0.5;exitY=0;entryX=0.5;entryY=1;" edge="1" parent="1" source="api-convert" target="api-convert">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- /api/jobs/:id -->
+        <mxCell id="e-jobstatus-db" value="reads ConversionJob&#10;by id" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;exitX=0.7;exitY=1;entryX=0.6;entryY=0;" edge="1" parent="1" source="api-job-status" target="lib-db">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="900" y="400" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- /api/jobs/:id/download -->
+        <mxCell id="e-download-db" value="checks status=completed&#10;+ outputKey" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;exitX=0.55;exitY=1;entryX=0.8;entryY=0;" edge="1" parent="1" source="api-job-download" target="lib-db">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1050" y="395" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-download-jobstorage" value="readJobArtifact()&#10;reads output PDF" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;exitX=0.7;exitY=1;entryX=0.7;entryY=0;strokeColor=#d6b656;" edge="1" parent="1" source="api-job-download" target="lib-job-storage">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-download-stream" value="5. streams PDF bytes&#10;(application/pdf)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;strokeColor=#1a73e8;exitX=0;exitY=0.2;entryX=1;entryY=0.6;" edge="1" parent="1" source="api-job-download" target="browser">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="300" y="285" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- admin login -->
+        <mxCell id="e-adminlogin-lib" value="6. validates token&#10;sets signed cookie" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;exitX=0.7;exitY=1;entryX=0.3;entryY=0;" edge="1" parent="1" source="api-admin-login" target="lib-admin-auth">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-browser-adminlogin" value="POST /api/admin/login&#10;{ token }" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;exitX=0.5;exitY=1;entryX=0.1;entryY=0;" edge="1" parent="1" source="page-admin-login" target="api-admin-login">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="755" y="320" />
+              <mxPoint x="445" y="320" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-adminmetrics-db" value="reads job/order&#10;aggregates" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;exitX=0.9;exitY=1;entryX=1;entryY=0;" edge="1" parent="1" source="api-admin-metrics" target="lib-db">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1320" y="400" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- create-order flow -->
+        <mxCell id="e-createorder-ratelimit" value="rate limit&#10;5 / 60s per IP" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;exitX=0.3;exitY=1;entryX=1;entryY=0.3;" edge="1" parent="1" source="api-create-order" target="lib-rate-limit">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-createorder-geo" value="checks isUserInIndia()&#10;for INR vs USD pricing" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;exitX=0.6;exitY=1;entryX=0.3;entryY=0;strokeColor=#d79b00;" edge="1" parent="1" source="api-create-order" target="lib-geo">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-geo-ipapi" value="GET https://ipapi.co/&lt;ip&gt;/json/" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;strokeColor=#d79b00;exitX=1;exitY=0.3;entryX=0;entryY=0.7;" edge="1" parent="1" source="lib-geo" target="ext-ipapi">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1500" y="380" />
+              <mxPoint x="1500" y="200" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-createorder-razorpaylib" value="creates Razorpay order" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;exitX=0.8;exitY=1;entryX=0.5;entryY=0;strokeColor=#d79b00;" edge="1" parent="1" source="api-create-order" target="lib-razorpay">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-razorpaylib-razorpayapi" value="POST orders.create()&#10;via Razorpay SDK" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;strokeColor=#d79b00;exitX=1;exitY=0.3;entryX=0;entryY=0.6;" edge="1" parent="1" source="lib-razorpay" target="ext-razorpay">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1500" y="410" />
+              <mxPoint x="1500" y="120" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-createorder-db" value="creates ConversionOrder&#10;(status=created)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;exitX=1;exitY=1;entryX=0.4;entryY=0;strokeColor=#b85450;" edge="1" parent="1" source="api-create-order" target="lib-db">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1240" y="405" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- convert verifies payment against order (signature check) -->
+        <mxCell id="e-convert-paymentcheck" value="verifies Razorpay signature +&#10;looks up ConversionOrder&#10;(if not free tier)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;exitX=1;exitY=0.3;entryX=0;entryY=0.3;" edge="1" parent="1" source="api-convert" target="api-create-order">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- worker-health -->
+        <mxCell id="e-workerhealth-call" value="7. GET CONVERSION_WORKER_URL + /health&#10;(the one real HTTP call app -&gt; worker)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;strokeColor=#82b366;exitX=0.7;exitY=1;entryX=0.5;entryY=0;" edge="1" parent="1" source="api-worker-health" target="worker-legacy-health">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1280" y="600" />
+              <mxPoint x="900" y="600" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- DB to app group overall connection (logical) -->
+        <mxCell id="e-db-app" value="Prisma ORM&#10;DATABASE_URL" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;exitX=0.5;exitY=0;entryX=0;entryY=0.7;strokeColor=#b85450;" edge="1" parent="1" source="db-group" target="lib-db">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="160" y="700" />
+              <mxPoint x="1260" y="700" />
+              <mxPoint x="1260" y="475" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- Worker flow -->
+        <mxCell id="e-pollloop-db-claim" value="A. claims queued job&#10;(atomic updateMany&#10;status: queued -&gt; processing)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;exitX=0;exitY=0.5;entryX=0;entryY=0.4;strokeColor=#b85450;" edge="1" parent="1" source="worker-poll" target="db-cylinder">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="300" y="885" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-pollloop-volume-read" value="B. reads input files&#10;readJobArtifact(storageKey)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;exitX=1;exitY=0.3;entryX=0;entryY=0.6;strokeColor=#d6b656;" edge="1" parent="1" source="worker-poll" target="volume">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1550" y="860" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-pollloop-conversionlib" value="C. convertFilesToPdfBuffer()" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;exitX=1;exitY=0.5;entryX=0;entryY=0.5;strokeColor=#82b366;" edge="1" parent="1" source="worker-poll" target="worker-conversion-lib">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="e-conversionlib-volume-write" value="D. writes output PDF&#10;writeJobOutputArtifact()" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;exitX=1;exitY=0.3;entryX=0;entryY=0.8;strokeColor=#d6b656;" edge="1" parent="1" source="worker-conversion-lib" target="volume">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1500" y="870" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-pollloop-db-complete" value="E. updates ConversionJob&#10;status=completed (or failed/&#10;retry with backoff)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;fontStyle=1;exitX=0;exitY=0.8;entryX=0;entryY=0.7;strokeColor=#b85450;" edge="1" parent="1" source="worker-poll" target="db-cylinder">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="290" y="940" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+        <mxCell id="e-pollloop-deleteinputs" value="F. deletes input artifacts&#10;deleteJobInputs()" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=10;dashed=1;exitX=0.9;exitY=0;entryX=0.8;entryY=1;strokeColor=#d6b656;" edge="1" parent="1" source="worker-poll" target="volume">
+          <mxGeometry relative="1" as="geometry">
+            <Array as="points">
+              <mxPoint x="1650" y="820" />
+              <mxPoint x="1650" y="1020" />
+            </Array>
+          </mxGeometry>
+        </mxCell>
+
+        <!-- docker-compose healthcheck note -->
+        <mxCell id="e-compose-healthcheck" value="docker-compose healthcheck&#10;polls GET /health (interval 10s)" style="edgeStyle=orthogonalEdgeStyle;rounded=1;html=1;fontSize=9;dashed=1;fontColor=#888888;exitX=0.5;exitY=1;entryX=0.5;entryY=0;strokeColor=#999999;" edge="1" parent="1" source="worker-legacy-health" target="worker-legacy-convert">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+        <!-- legend -->
+        <mxCell id="legend" value="Legend" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#666666;verticalAlign=top;fontStyle=1;fontSize=13;spacingTop=6;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1550" y="280" width="260" height="220" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-app" value="App container (Next.js)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#dae8fc;strokeColor=#6c8ebf;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1565" y="312" width="230" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-worker" value="Worker container (Node.js)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#d5e8d4;strokeColor=#82b366;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1565" y="344" width="230" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-db" value="DB container (Postgres)" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1565" y="376" width="230" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-external" value="External service" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffe6cc;strokeColor=#d79b00;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1565" y="408" width="230" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-volume" value="Shared volume (job_storage)" style="shape=folder;whiteSpace=wrap;html=1;tabWidth=30;tabHeight=12;tabPosition=left;fillColor=#fff2cc;strokeColor=#d6b656;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1565" y="440" width="230" height="26" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-legacy" value="Legacy/internal-only endpoint" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f5f5;strokeColor=#999999;dashed=1;fontSize=10;" vertex="1" parent="1">
+          <mxGeometry x="1565" y="472" width="230" height="26" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>
